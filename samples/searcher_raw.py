@@ -6,8 +6,8 @@ from __future__ import unicode_literals
 from ctypes import CDLL, byref, c_int, c_void_p
 import sys
 
-from estraier import *
-from cabin import *
+from estraier_raw import *
+from cabin_raw import *
 
 if __name__=="__main__":
     libc = CDLL("libc.so")

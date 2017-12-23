@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 from ctypes import byref, c_int
 import sys
 
-from estraier import *
+from estraier_raw import *
 
 if __name__=="__main__":
     ecode = c_int()
