@@ -525,3 +525,12 @@ cbmaploadone.__doc__ = \
     "the return value can be treated as a character string."
 cbmaploadone.restype = c_char_p
 cbmaploadone.argtypes = [c_char_p, c_int, c_char_p, c_int, c_int]
+
+
+cbmapopenex = libest_raw.cbmapopenex
+cbmapopenex.__doc__ = \
+    "Get a map handle with specifying the number of buckets.\n"\
+    "`bnum' specifies the number of buckets.\n"\
+    "The return value is a map handle."
+cbmapopenex.restype = c_void_p
+cbmapopenex.argtypes = [c_int]
