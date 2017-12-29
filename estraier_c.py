@@ -12,9 +12,9 @@ class Document(object):
         self._id = -1
         self._attr = {}
         self._texts = []
-        self._hidden_texts = []
-        self._keywords = []
-        self._score = 0
+        self._hidden_texts = None
+        self._keywords = {}
+        self._score = None
 
     def add_attr(self, name, value):
         """Add an attribute.
@@ -40,14 +40,14 @@ class Document(object):
         `kwords' specifies a hash object of keywords.  Keys of the hash should be keywords of the
         document and values should be their scores in decimal string.
         """
-        pass
+        self._keywords = kwords
     
     def set_score(self, score):
         """Set the substitute score.
         `score' specifies the substitute score.  It it is negative, the substitute score setting is
         nullified.
         """
-        pass
+        self._score = score
     
     def id(self):
         """Get the ID number.
@@ -94,6 +94,8 @@ class Document(object):
         textsNative = est_doc_texts(docNative)
         textsNum = cblistnum(textsNative)
         self._texts = [ cblistval(textsNative, i, None).decode("utf8") for i in range(textsNum) ]
+        self._hidden_texts = est_doc_hidden_texts(docNative).decode("utf-8")
+        self._score = est_doc_score(docNative)
     
     def toNative(self):
         docNative = est_doc_new()
@@ -105,10 +107,15 @@ class Document(object):
             est_doc_add_text(docNative, text1.encode("utf-8"))
         for text1 in self._hidden_texts:
             est_doc_add_hidden_text(docNative, text1.encode("utf-8"))
-        for key in self._keywords:
-             pass # TODO
+        if self._keywords:
+            cbmapkw = cbmapopen()
+            for key in self._keywords:
+                cbmapput(cbmapkw, key.encode("utf-8"), -1,
+                         value.encode("utf-8"), -1, 1)
+            est_doc_set_keywords(docNative, cbmapkw)
+            cbmapclose(cbmapkw)
         if self._score:
-             est_doc_set_score(docNative, self.score)
+            est_doc_set_score(docNative, self.score)
         return docNative
     
     def deleteNative(self, docNative):
@@ -376,13 +383,21 @@ class Database(object):
         words are flushed.
         The return value is true if success, else it is false.
         """
-        pass
+        rv = est_db_flush(self.estdb, max)
+        if rv:
+            return True
+        else:
+            return False
     
     def sync(self):
         """Synchronize updating contents.
         The return value is true if success, else it is false.
         """
-        pass
+        rv = est_db_sync(self.estdb)
+        if rv:
+            return True
+        else:
+            return False
     
     def optimize(self, options):
         """Optimize the database.
@@ -391,16 +406,24 @@ class Database(object):
         two can be specified at the same time by bitwise or.
         The return value is true if success, else it is false.
         """
-        pass
+        rv = est_db_optimize(self.estdb, options)
+        if rv:
+            return True
+        else:
+            return False
     
     def merge(self, name, options):
         """Merge another database.
         `name' specifies the name of another database directory.
-        `options' specifies options: `Database::MGCLEAN' to clean up dispensable regions of the
+        `options' specifies options: `Database.MGCLEAN' to clean up dispensable regions of the
         deleted document.
         The return value is true if success, else it is false.
         """
-        pass
+        rv = est_db_merge(self.estdb, name.encode("utf-8"), options)
+        if rv:
+            return True
+        else:
+            return False
     
     def put_doc(self, doc, options):
         """Add a document.
@@ -424,7 +447,11 @@ class Database(object):
         deleted document.
         The return value is true if success, else it is false.
         """
-        pass
+        rv = est_db_out_doc(self.estdb, id, options)
+        if rv:
+            return True
+        else:
+            return False
     
     def edit_doc(self, doc):
         """Edit attributes of a document.
@@ -461,7 +488,7 @@ class Database(object):
         `uri' specifies the URI of a registered document.
         The return value is the ID of the document.  On error, -1 is returned.
         """
-        pass
+        return est_db_uri_to_id(self.estdb, uri.encode("utf-8"))
     
     def search(self, cond):
         num = ctypes.c_int()
