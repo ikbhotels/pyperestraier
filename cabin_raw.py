@@ -13,7 +13,8 @@
 # 02111-1307 USA.
 ################################################################################################
 
-from ctypes import CDLL, POINTER, c_int, c_double, c_char_p, c_void_p, c_size_t
+from ctypes import CDLL, POINTER, c_int, c_uint, c_long, c_double
+from ctypes import c_char_p, c_void_p, c_size_t
 
 libest_raw = CDLL("libestraier.so")
 
@@ -526,7 +527,798 @@ cbmaploadone.__doc__ = \
 cbmaploadone.restype = c_char_p
 cbmaploadone.argtypes = [c_char_p, c_int, c_char_p, c_int, c_int]
 
+# CBHEAP *cbheapopen(int size, int max, int(*compar)(const void *, const void *));
+cbheapopen = libest_raw.cbheapopen
+cbheapopen.__doc__ = \
+    "Get a heap handle.\n"\
+    "`size' specifies the size of each record.\n"\
+    "`max' specifies the maximum number of records in the heap.\n"\
+    "`compar' specifies the pointer to comparing function.  The two arguments specify the pointers\n"\
+    "of records.  The comparing function should returns positive if the former is big, negative\n"\
+    "if the latter is big, 0 if both are equal.\n"\
+    "The return value is a heap handle."
+cbheapopen.restype = c_void_p
+cbheapopen.argtypes = [c_int, c_int, c_void_p]
 
+# CBHEAP *cbheapdup(CBHEAP *heap);
+cbheapdup = libest_raw.cbheapdup
+cbheapdup.__doc__ = \
+    "Copy a heap.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "The return value is a new heap handle."
+cbheapdup.restype = c_void_p
+cbheapdup.argtypes = [c_void_p]
+
+# void cbheapclose(CBHEAP *heap);
+cbheapclose = libest_raw.cbheapclose
+cbheapclose.__doc__ = \
+    "Close a heap handle.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "Because the region of a closed handle is released, it becomes impossible to use the handle."
+cbheapclose.restype = None
+cbheapclose.argtypes = [c_void_p]
+
+# int cbheapnum(CBHEAP *heap);
+cbheapnum = libest_raw.cbheapnum
+cbheapnum.__doc__ = \
+    "Get the number of the records stored in a heap.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "The return value is the number of the records stored in the heap."
+cbheapnum.restype = c_int
+cbheapnum.argtypes = [c_void_p]
+
+# int cbheapinsert(CBHEAP *heap, const void *ptr);
+cbheapinsert = libest_raw.cbheapinsert
+cbheapinsert.__doc__ = \
+    "Insert a record into a heap.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "`ptr' specifies the pointer to the region of a record.\n"\
+    "The return value is true if the record is added, else false.\n"\
+    "If the new record is bigger than the biggest existing regord, the new record is not added.\n"\
+    "If the new record is added and the number of records exceeds the maximum number, the biggest\n"\
+    "existing record is removed."
+cbheapinsert.restype = c_int
+cbheapinsert.argtypes = [c_void_p, c_void_p]
+
+# const void *cbheapval(CBHEAP *heap, int index);
+cbheapval = libest_raw.cbheapval
+cbheapval.__doc__ = \
+    "Get the pointer to the region of a record in a heap.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "`index' specifies the index of a record.\n"\
+    "The return value is the pointer to the region of the record.\n"\
+    "If `index' is equal to or more than the number of records, the return value is `NULL'.  Note\n"\
+    "that records are organized by the nagative order the comparing function."
+cbheapval.restype = c_void_p
+cbheapval.argtypes = [c_void_p, c_int]
+
+# void *cbheaptomalloc(CBHEAP *heap, int *np);
+cbheaptomalloc = libest_raw.cbheaptomalloc
+cbheaptomalloc.__doc__ = \
+    "Convert a heap to an allocated region.\n"\
+    "`heap' specifies a heap handle.\n"\
+    "`np' specifies the pointer to a variable to which the number of records of the return value\n"\
+    "is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer to the region of the heap.  Records are sorted.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use.  Because the region of the original\n"\
+    "heap is released, it should not be released again."
+cbheaptomalloc.restype = c_void_p
+cbheaptomalloc.argtypes = [c_void_p, POINTER(c_int)]
+
+# char *cbsprintf(const char *format, ...);
+cbsprintf = libest_raw.cbsprintf
+cbsprintf.__doc__ = \
+    "Allocate a formatted string on memory.\n"\
+    "`format' specifies a printf-like format string.  The conversion character `%' can be used\n"\
+    "with such flag characters as `d', `o', `u', `x', `X', `e', `E', `f', `g', `G', `c', `s', and\n"\
+    "`%'.  Specifiers of the field length and the precision can be put between the conversion\n"\
+    "characters and the flag characters.  The specifiers consist of decimal characters, `.', `+',\n"\
+    "`-', and the space character.\n"\
+    "The other arguments are used according to the format string.\n"\
+    "The return value is the pointer to the allocated region of the result string.  Because the\n"\
+    "region of the return value is allocated with the `malloc' call, it should be released with\n"\
+    "the `free' call if it is no longer in use."
+cbsprintf.restype = c_char_p
+# cbsprintf.argtypes = [c_char_p, ]
+
+# char *cbreplace(const char *str, CBMAP *pairs);
+cbreplace = libest_raw.cbreplace
+cbreplace.__doc__ = \
+    "Replace some patterns in a string.\n"\
+    "`str' specifies the pointer to a source string.\n"\
+    "`pairs' specifies the handle of a map composed of pairs of replacement.  The key of each pair\n"\
+    "specifies a pattern before replacement and its value specifies the pattern after replacement.\n"\
+    "The return value is the pointer to the allocated region of the result string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbreplace.restype = c_char_p
+cbreplace.argtypes = [c_char_p, c_void_p]
+
+# CBLIST *cbsplit(const char *ptr, int size, const char *delim);
+cbsplit = libest_raw.cbsplit
+cbsplit.__doc__ = \
+    "Make a list by splitting a serial datum.\n"\
+    "`ptr' specifies the pointer to the region of the source content.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`delim' specifies a string containing delimiting characters.  If it is `NULL', zero code is\n"\
+    "used as a delimiter.\n"\
+    "The return value is a list handle.\n"\
+    "If two delimiters are successive, it is assumed that an empty element is between the two.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose'."
+cbsplit.restype = c_void_p
+cbsplit.argtypes = [c_char_p, c_int, c_char_p]
+
+# char *cbreadfile(const char *name, int *sp);
+cbreadfile = libest_raw.cbreadfile
+cbreadfile.__doc__ = \
+    "Read whole data of a file.\n"\
+    "`name' specifies the name of a file.  If it is `NULL', the standard input is specified.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer to the allocated region of the read data.  Because an\n"\
+    "additional zero code is appended at the end of the region of the return value, the return\n"\
+    "value can be treated as a character string.  Because the region of the return value is\n"\
+    "allocated with the `malloc' call, it should be released with the `free' call if it is no\n"\
+    "longer in use."
+cbreadfile.restype = c_char_p
+cbreadfile.argtypes = [c_char_p, POINTER(c_int)]
+
+# int cbwritefile(const char *name, const char *ptr, int size);
+cbwritefile = libest_raw.cbwritefile
+cbwritefile.__doc__ = \
+    "Write a serial datum into a file.\n"\
+    "`name specifies the name of a file.  If it is `NULL', the standard output is specified.\n"\
+    "`ptr' specifies the pointer to the region of the source content.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "If successful, the return value is true, else, it is false.\n"\
+    "If the file exists, it is overwritten.  Else, a new file is created."
+cbwritefile.restype = c_int
+cbwritefile.argtypes = [c_char_p, c_char_p, c_int]
+
+# CBLIST *cbreadlines(const char *name);
+cbreadlines = libest_raw.cbreadlines
+cbreadlines.__doc__ = \
+    "Read every line of a file.\n"\
+    "`name' specifies the name of a file.  If it is `NULL', the standard input is specified.\n"\
+    "The return value is a list handle of the lines if successful, else it is NULL.  Line\n"\
+    "separators are cut out.  Because the handle of the return value is opened with the function\n"\
+    "`cblistopen', it should be closed with the function `cblistclose' if it is no longer in use."
+cbreadlines.restype = c_void_p
+cbreadlines.aargtypes = [c_char_p]
+
+# CBLIST *cbdirlist(const char *name);
+cbdirlist = libest_raw.cbdirlist
+cbdirlist.__doc__ = \
+    "Read names of files in a directory.\n"\
+    "`name' specifies the name of a directory.\n"\
+    "The return value is a list handle of names if successful, else it is NULL.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose' if it is no longer in use."
+cbdirlist.restype = c_void_p
+cbdirlist.argtypes = [c_char_p]
+
+# int cbfilestat(const char *name, int *isdirp, int *sizep, time_t *mtimep);
+cbfilestat = libest_raw.cbfilestat
+cbfilestat.__doc__ = \
+    "Get the status of a file or a directory.\n"\
+    "`name' specifies the name of a file or a directory.\n"\
+    "`dirp' specifies the pointer to a variable to which whether the file is a directory is\n"\
+    "assigned.  If it is `NULL', it is not used.\n"\
+    "`sizep' specifies the pointer to a variable to which the size of the file is assigned.  If it\n"\
+    "is `NULL', it is not used.\n"\
+    "`mtimep' specifies the pointer to a variable to which the last modified time of the file is\n"\
+    "assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is true, else, false.  False is returned when the file does\n"\
+    "not exist or the permission is denied."
+cbfilestat.restype = c_int
+cbfilestat.argtypes = [c_char_p, POINTER(c_int), POINTER(c_int), POINTER(c_long)] # time_t
+
+# int cbremove(const char *name);
+cbremove = libest_raw.cbremove
+cbremove.__doc__ = \
+    "Remove a file or a directory and its sub ones recursively.\n"\
+    "`name' specifies the name of a file or a directory.\n"\
+    "If successful, the return value is true, else, false.  False is returned when the file does\n"\
+    "not exist or the permission is denied."
+cbremove.restype = c_int
+cbremove.argtypes = [c_char_p]
+
+# CBMAP *cburlbreak(const char *str);
+cburlbreak = libest_raw.cburlbreak
+cburlbreak.__doc__ = \
+    "Break up a URL into elements.\n"\
+    "`str' specifies the pointer to a string of URL.\n"\
+    "The return value is a map handle.  Each key of the map is the name of an element.  The key\n"\
+    "\"self\" specifies the URL itself.  The key \"scheme\" specifies the scheme.  The key \"host\"\n"\
+    "specifies the host of the server.  The key \"port\" specifies the port number of the server.\n"\
+    "The key \"authority\" specifies the authority information.  The key \"path\" specifies the path\n"\
+    "of the resource.  The key \"file\" specifies the file name without the directory section.  The\n"\
+    "key \"query\" specifies the query string.  The key \"fragment\" specifies the fragment string.\n"\
+    "Supported schema are HTTP, HTTPS, FTP, and FILE.  Absolute URL and relative URL are supported.\n"\
+    "Because the handle of the return value is opened with the function `cbmapopen', it should\n"\
+    "be closed with the function `cbmapclose' if it is no longer in use."
+cburlbreak.restype = c_void_p
+cburlbreak.argtypes = [c_char_p]
+
+# char *cburlresolve(const char *base, const char *target);
+cburlresolve = libest_raw.cburlresolve
+cburlresolve.__doc__ = \
+    "Resolve a relative URL with another absolute URL.\n"\
+    "`base' specifies an absolute URL of a base location.\n"\
+    "`target' specifies a URL to be resolved.\n"\
+    "The return value is a resolved URL.  If the target URL is relative, a new URL of relative\n"\
+    "location from the base location is returned.  Else, a copy of the target URL is returned.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cburlresolve.restype = c_char_p
+cburlresolve.argtypes = [c_char_p, c_char_p]
+
+# char *cburlencode(const char *ptr, int size);
+cburlencode = libest_raw.cburlencode
+cburlencode.__doc__ = \
+    "Encode a serial object with URL encoding.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "The return value is the pointer to the result string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cburlencode.restype = c_char_p
+cburlencode.argtypes = [c_char_p, c_int]
+
+# char *cburldecode(const char *str, int *sp);
+cburldecode = libest_raw.cburldecode
+cburldecode.__doc__ = \
+    "Decode a string encoded with URL encoding.\n"\
+    "`str' specifies the pointer to an encoded string.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer to the region of the result.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if\n"\
+    "it is no longer in use."
+cburldecode.restype = c_char_p
+cburldecode.argtypes = [c_char_p, POINTER(c_int)]
+
+# char *cbbaseencode(const char *ptr, int size);
+cbbaseencode = libest_raw.cbbaseencode
+cbbaseencode.__doc__ = \
+    "Encode a serial object with Base64 encoding.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "The return value is the pointer to the result string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbbaseencode.restype = c_char_p
+cbbaseencode.argtypes = [c_char_p, c_int]
+
+# char *cbbasedecode(const char *str, int *sp);
+cbbasedecode = libest_raw.cbbasedecode
+cbbasedecode.__doc__ = \
+    "Decode a string encoded with Base64 encoding.\n"\
+    "`str' specifies the pointer to an encoded string.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer to the region of the result.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if\n"\
+    "it is no longer in use."
+cbbasedecode.restype = c_char_p
+cbbasedecode.argtypes = [c_char_p, POINTER(c_int)]
+
+# char *cbquoteencode(const char *ptr, int size);
+cbquoteencode = libest_raw.cbquoteencode
+cbquoteencode.__doc__ = \
+    "Encode a serial object with quoted-printable encoding.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "The return value is the pointer to the result string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbquoteencode.restype = c_char_p
+cbquoteencode.argtypes = [c_char_p, c_int]
+
+# char *cbquotedecode(const char *str, int *sp);
+cbquotedecode = libest_raw.cbquotedecode
+cbquotedecode.__doc__ = \
+    "Decode a string encoded with quoted-printable encoding.\n"\
+    "`str' specifies the pointer to an encoded string.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer to the region of the result.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if\n"\
+    "it is no longer in use."
+cbquotedecode.restype = c_char_p
+cbquotedecode.argtypes = [c_char_p, POINTER(c_int)]
+
+# char *cbmimebreak(const char *ptr, int size, CBMAP *attrs, int *sp);
+cbmimebreak = libest_raw.cbmimebreak
+cbmimebreak.__doc__ = \
+    "Split a string of MIME into headers and the body.\n"\
+    "`ptr' specifies the pointer to the region of MIME data.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`attrs' specifies a map handle to store attributes.  If it is `NULL', it is not used.  Each\n"\
+    "key of the map is an attribute name uncapitalized.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "The return value is the pointer of the body data.\n"\
+    "If the content type is defined, the attribute map has the key \"TYPE\" specifying the type.  If\n"\
+    "the character encoding is defined, the key \"CHARSET\" specifies the encoding name.  If the\n"\
+    "boundary string of multipart is defined, the key \"BOUNDARY\" specifies the string.  If the\n"\
+    "content disposition is defined, the key \"DISPOSITION\" specifies the direction.  If the file\n"\
+    "name is defined, the key \"FILENAME\" specifies the name.  If the attribute name is defined,\n"\
+    "the key \"NAME\" specifies the name.  Because the region of the return value is allocated with\n"\
+    "the `malloc' call, it should be released with the `free' call if it is no longer in use"
+cbmimebreak.restype = c_char_p
+cbmimebreak.argtypes = [c_char_p, c_int, c_void_p, POINTER(c_int)]
+
+# CBLIST *cbmimeparts(const char *ptr, int size, const char *boundary);
+cbmimeparts = libest_raw.cbmimeparts
+cbmimeparts.__doc__ = \
+    "Split multipart data of MIME into its parts.\n"\
+    "`ptr' specifies the pointer to the region of multipart data of MIME.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`boundary' specifies the pointer to the region of the boundary string.\n"\
+    "The return value is a list handle.  Each element of the list is the string of a part.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose' if it is no longer in use."
+cbmimeparts.restype = c_void_p
+cbmimeparts.argtypes = [c_char_p, c_int, c_char_p]
+
+# char *cbmimeencode(const char *str, const char *encname, int base);
+cbmimeencode = libest_raw.cbmimeencode
+cbmimeencode.__doc__ = \
+    "Encode a string with MIME encoding.\n"\
+    "`str' specifies the pointer to a string.\n"\
+    "`encname' specifies a string of the name of the character encoding.\n"\
+    "The return value is the pointer to the result string.\n"\
+    "`base' specifies whether to use Base64 encoding.  If it is false, quoted-printable is used.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbmimeencode.restype = c_char_p
+cbmimeencode.argtypes = [c_char_p, c_char_p, c_int]
+
+# char *cbmimedecode(const char *str, char *enp);
+cbmimedecode = libest_raw.cbmimedecode
+cbmimedecode.__doc__ = \
+    "Decode a string encoded with MIME encoding.\n"\
+    "`str' specifies the pointer to an encoded string.\n"\
+    "`enp' specifies the pointer to a region into which the name of encoding is written.  If it is\n"\
+    "`NULL', it is not used.  The size of the buffer should be equal to or more than 32 bytes.\n"\
+    "The return value is the pointer to the result string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbmimedecode.restype = c_char_p
+cbmimedecode.argtypes = [c_char_p, c_char_p]
+
+# CBLIST *cbcsvrows(const char *str);
+cbcsvrows = libest_raw.cbcsvrows
+cbcsvrows.__doc__ = \
+    "Split a string of CSV into rows.\n"\
+    "`str' specifies the pointer to the region of an CSV string.\n"\
+    "The return value is a list handle.  Each element of the list is a string of a row.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose' if it is no longer in use.  The character encoding\n"\
+    "of the input string should be US-ASCII, UTF-8, ISO-8859-*, EUC-*, or Shift_JIS.  Being\n"\
+    "compatible with MS-Excel, these functions for CSV can handle cells including such meta\n"\
+    "characters as comma, between double quotation marks."
+cbcsvrows.restype = c_void_p
+cbcsvrows.argtypes = [c_char_p]
+
+# CBLIST *cbcsvcells(const char *str);
+cbcsvcells = libest_raw.cbcsvcells
+cbcsvcells.__doc__ = \
+    "Split the string of a row of CSV into cells.\n"\
+    "`str' specifies the pointer to the region of a row of CSV.\n"\
+    "The return value is a list handle.  Each element of the list is the unescaped string of a\n"\
+    "cell of the row.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose' if it is no longer in use."
+cbcsvcells.restype = c_void_p
+cbcsvcells.argtypes = [c_char_p]
+
+# char *cbcsvescape(const char *str);
+cbcsvescape = libest_raw.cbcsvescape
+cbcsvescape.__doc__ = \
+    "Escape a string with the meta characters of CSV.\n"\
+    "`str' specifies the pointer to the region of a string.\n"\
+    "The return value is the pointer to the escaped string sanitized of meta characters.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbcsvescape.restype = c_char_p
+cbcsvescape.argtypes = [c_char_p]
+
+# char *cbcsvunescape(const char *str);
+cbcsvunescape = libest_raw.cbcsvunescape
+cbcsvunescape.__doc__ = \
+    "Unescape a string with the escaped meta characters of CSV.\n"\
+    "`str' specifies the pointer to the region of a string with meta characters.\n"\
+    "The return value is the pointer to the unescaped string.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbcsvunescape.restype = c_char_p
+cbcsvunescape.argtypes = [c_char_p]
+
+# CBLIST *cbxmlbreak(const char *str, int cr);
+cbxmlbreak = libest_raw.cbxmlbreak
+cbxmlbreak.__doc__ = \
+    "Split a string of XML into tags and text sections.\n"\
+    "`str' specifies the pointer to the region of an XML string.\n"\
+    "`cr' specifies whether to remove comments.\n"\
+    "The return value is a list handle.  Each element of the list is the string of a tag or a\n"\
+    "text section.\n"\
+    "Because the handle of the return value is opened with the function `cblistopen', it should\n"\
+    "be closed with the function `cblistclose' if it is no longer in use.  The character encoding\n"\
+    "of the input string should be US-ASCII, UTF-8, ISO-8859-*, EUC-*, or Shift_JIS.  Because\n"\
+    "these functions for XML are not XML parser with validation check, it can handle also HTML\n"\
+    "and SGML."
+cbxmlbreak.restype = c_void_p
+cbxmlbreak.argtypes = [c_char_p, c_int]
+
+# CBMAP *cbxmlattrs(const char *str);
+cbxmlattrs = libest_raw.cbxmlattrs
+cbxmlattrs.__doc__ = \
+    "Get the map of attributes of an XML tag.\n"\
+    "`str' specifies the pointer to the region of a tag string.\n"\
+    "The return value is a map handle.  Each key of the map is the name of an attribute.  Each\n"\
+    "value is unescaped.  You can get the name of the tag with the key of an empty string.\n"\
+    "Because the handle of the return value is opened with the function `cbmapopen', it should\n"\
+    "be closed with the function `cbmapclose' if it is no longer in use."
+cbxmlattrs.restype = c_void_p
+cbxmlattrs.argtypes = [c_char_p]
+
+# char *cbxmlescape(const char *str);
+cbxmlescape = libest_raw.cbxmlescape
+cbxmlescape.__doc__ = \
+    "Escape a string with the meta characters of XML.\n"\
+    "`str' specifies the pointer to the region of a string.\n"\
+    "The return value is the pointer to the escaped string sanitized of meta characters.\n"\
+    "This function converts only `&', `<', `>', and `\"'.  Because the region of the return value\n"\
+    "is allocated with the `malloc' call, it should be released with the `free' call if it is no\n"\
+    "longer in use."
+cbxmlescape.restype = c_char_p
+cbxmlescape.argtypes = [c_char_p]
+
+# char *cbxmlunescape(const char *str);
+cbxmlunescape = libest_raw.cbxmlunescape
+cbxmlunescape.__doc__ = \
+    "Unescape a string with the entity references of XML.\n"\
+    "`str' specifies the pointer to the region of a string with meta characters.\n"\
+    "The return value is the pointer to the unescaped string.\n"\
+    "This function restores only `&amp;', `&lt;', `&gt;', and `&quot;'.  Because the region of the\n"\
+    "return value is allocated with the `malloc' call, it should be released with the `free' call\n"\
+    "if it is no longer in use."
+cbxmlunescape.restype = c_char_p
+cbxmlunescape.argtypes = [c_char_p]
+
+# char *cbdeflate(const char *ptr, int size, int *sp);
+cbdeflate = libest_raw.cbdeflate
+cbdeflate.__doc__ = \
+    "Compress a serial object with ZLIB.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use.  This function is available only if\n"\
+    "QDBM was built with ZLIB enabled."
+cbdeflate.restype = c_char_p
+cbdeflate.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbinflate(const char *ptr, int size, int *sp);
+cbinflate = libest_raw.cbinflate
+cbinflate.__doc__ = \
+    "Decompress a serial object compressed with ZLIB.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if it\n"\
+    "is no longer in use.  This function is available only if QDBM was built with ZLIB enabled."
+cbinflate.restype = c_char_p
+cbinflate.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbgzencode(const char *ptr, int size, int *sp);
+cbgzencode = libest_raw.cbgzencode
+cbgzencode.__doc__ = \
+    "Compress a serial object with GZIP.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use.  This function is available only if\n"\
+    "QDBM was built with ZLIB enabled."
+cbgzencode.restype = c_char_p
+cbgzencode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbgzdecode(const char *ptr, int size, int *sp);
+cbgzdecode = libest_raw.cbgzdecode
+cbgzdecode.__doc__ = \
+    "Decompress a serial object compressed with GZIP.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if it\n"\
+    "is no longer in use.  This function is available only if QDBM was built with ZLIB enabled."
+cbgzdecode.restype = c_char_p
+cbgzdecode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# unsigned int cbgetcrc(const char *ptr, int size);
+cbgetcrc = libest_raw.cbgetcrc
+cbgetcrc.__doc__ = \
+    "Get the CRC32 checksum of a serial object.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "The return value is the CRC32 checksum of the object.\n"\
+    "This function is available only if QDBM was built with ZLIB enabled."
+cbgetcrc.restype = c_uint
+cbgetcrc.argtypes = [c_char_p, c_int]
+
+# char *cblzoencode(const char *ptr, int size, int *sp);
+cblzoencode = libest_raw.cblzoencode
+cblzoencode.__doc__ = \
+    "Compress a serial object with LZO.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use.  This function is available only if\n"\
+    "QDBM was built with LZO enabled."
+cblzoencode.restype = c_char_p
+cblzoencode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cblzodecode(const char *ptr, int size, int *sp);
+cblzodecode = libest_raw.cblzodecode
+cblzodecode.__doc__ = \
+    "Decompress a serial object compressed with LZO.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if it\n"\
+    "is no longer in use.  This function is available only if QDBM was built with LZO enabled."
+cblzodecode.restype = c_char_p
+cblzodecode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbbzencode(const char *ptr, int size, int *sp);
+cbbzencode = libest_raw.cbbzencode
+cbbzencode.__doc__ = \
+    "Compress a serial object with BZIP2.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use.  This function is available only if\n"\
+    "QDBM was built with LZO enabled."
+cbbzencode.restype = c_char_p
+cbbzencode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbbzdecode(const char *ptr, int size, int *sp);
+cbbzdecode = libest_raw.cbbzdecode
+cbbzdecode.__doc__ = \
+    "Decompress a serial object compressed with BZIP2.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if it\n"\
+    "is no longer in use.  This function is available only if QDBM was built with LZO enabled."
+cbbzdecode.restype = c_char_p
+cbbzdecode.argtypes = [c_char_p, c_int, POINTER(c_int)]
+
+# char *cbiconv(const char *ptr, int size, const char *icode, const char *ocode, int *sp, int *mp);
+cbiconv = libest_raw.cbiconv
+cbiconv.__doc__ = \
+    "Convert the character encoding of a string.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "`icode' specifies the name of encoding of the input string.\n"\
+    "`ocode' specifies the name of encoding of the output string.\n"\
+    "`sp' specifies the pointer to a variable to which the size of the region of the return\n"\
+    "value is assigned.  If it is `NULL', it is not used.\n"\
+    "`mp' specifies the pointer to a variable to which the number of missing characters by failure\n"\
+    "of conversion is assigned.  If it is `NULL', it is not used.\n"\
+    "If successful, the return value is the pointer to the result object, else, it is `NULL'.\n"\
+    "Because an additional zero code is appended at the end of the region of the return value,\n"\
+    "the return value can be treated as a character string.  Because the region of the return\n"\
+    "value is allocated with the `malloc' call, it should be released with the `free' call if it\n"\
+    "is no longer in use.  This function is available only if QDBM was built with ICONV enabled."
+cbiconv.restype = c_char_p
+cbiconv.argtypes = [c_char_p, c_int, c_char_p, c_char_p, POINTER(c_int), POINTER(c_int)]
+
+# const char *cbencname(const char *ptr, int size);
+cbencname = libest_raw.cbencname
+cbencname.__doc__ = \
+    "Detect the encoding of a string automatically.\n"\
+    "`ptr' specifies the pointer to a region.\n"\
+    "`size' specifies the size of the region.  If it is negative, the size is assigned with\n"\
+    "`strlen(ptr)'.\n"\
+    "The return value is the string of the encoding name of the string.\n"\
+    "As it stands, US-ASCII, ISO-2022-JP, Shift_JIS, CP932, EUC-JP, UTF-8, UTF-16, UTF-16BE,\n"\
+    "and UTF-16LE are supported.  If none of them matches, ISO-8859-1 is selected.  This function\n"\
+    "is available only if QDBM was built with ICONV enabled."
+cbencname.restype = c_char_p
+cbencname.argtypes = [c_char_p, c_int]
+
+# int cbjetlag(void);
+cbjetlag = libest_raw.cbjetlag
+cbjetlag.__doc__ = \
+    "Get the jet lag of the local time in seconds.\n"\
+    "The return value is the jet lag of the local time in seconds."
+cbjetlag.restype = c_int
+cbjetlag.argtypes = []
+
+# void cbcalendar(time_t t, int jl, int *yearp, int *monp, int *dayp,
+#                 int *hourp, int *minp, int *secp);
+cbcalendar = libest_raw.cbcalendar
+cbcalendar.__doc__ = \
+    "Get the Gregorian calendar of a time.\n"\
+    "`t' specifies a source time.  If it is negative, the current time is specified.\n"\
+    "`jl' specifies the jet lag of a location in seconds.\n"\
+    "`yearp' specifies the pointer to a variable to which the year is assigned.  If it is `NULL',\n"\
+    "it is not used.\n"\
+    "`monp' specifies the pointer to a variable to which the month is assigned.  If it is `NULL',\n"\
+    "it is not used.  1 means January and 12 means December.\n"\
+    "`dayp' specifies the pointer to a variable to which the day of the month is assigned.  If it\n"\
+    "is `NULL', it is not used.\n"\
+    "`hourp' specifies the pointer to a variable to which the hours is assigned.  If it is `NULL',\n"\
+    "it is not used.\n"\
+    "`minp' specifies the pointer to a variable to which the minutes is assigned.  If it is `NULL',\n"\
+    "it is not used.\n"\
+    "`secp' specifies the pointer to a variable to which the seconds is assigned.  If it is `NULL',\n"\
+    "it is not used."
+cbcalendar.restype = None
+cbcalendar.argtypes = [c_long, c_int, POINTER(c_int), POINTER(c_int), POINTER(c_int), POINTER(c_int), POINTER(c_int), POINTER(c_int)]
+
+# int cbdayofweek(int year, int mon, int day);
+cbdayofweek = libest_raw.cbdayofweek
+cbdayofweek.__doc__ = \
+    "Get the day of week of a date.\n"\
+    "`year' specifies the year of a date.\n"\
+    "`mon' specifies the month of the date.\n"\
+    "`day' specifies the day of the date.\n"\
+    "The return value is the day of week of the date.  0 means Sunday and 6 means Saturday."
+cbdayofweek.restype = c_int
+cbdayofweek.argtypes = [c_int, c_int, c_int]
+
+# char *cbdatestrwww(time_t t, int jl);
+cbdatestrwww = libest_raw.cbdatestrwww
+cbdatestrwww.__doc__ = \
+    "Get the string for a date in W3CDTF.\n"\
+    "`t' specifies a source time.  If it is negative, the current time is specified.\n"\
+    "`jl' specifies the jet lag of a location in seconds.\n"\
+    "The return value is the string of the date in W3CDTF (YYYY-MM-DDThh:mm:ddTZD).\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbdatestrwww.restype = c_char_p
+cbdatestrwww.argtypes = [c_long, c_int]
+
+# char *cbdatestrhttp(time_t t, int jl);
+cbdatestrhttp = libest_raw.cbdatestrhttp
+cbdatestrhttp.__doc__ = \
+    "Get the string for a date in RFC 1123 format.\n"\
+    "`t' specifies a source time.  If it is negative, the current time is specified.\n"\
+    "`jl' specifies the jet lag of a location in seconds.\n"\
+    "The return value is the string of the date in RFC 1123 format (Wdy, DD-Mon-YYYY hh:mm:dd TZD).\n"\
+    "Because the region of the return value is allocated with the `malloc' call, it should be\n"\
+    "released with the `free' call if it is no longer in use."
+cbdatestrhttp.restype = c_char_p
+cbdatestrhttp.argtypes = [c_long, c_int]
+
+# time_t cbstrmktime(const char *str);
+cbstrmktime = libest_raw.cbstrmktime
+cbstrmktime.__doc__ = \
+    "Get the time value of a date string in decimal, hexadecimal, W3CDTF, or RFC 822 (1123).\n"\
+    "`str' specifies a date string in decimal, hexadecimal, W3CDTF, or RFC 822 (1123).\n"\
+    "The return value is the time value of the date or -1 if the format is invalid.\n"\
+    "Decimal can be trailed by \"s\" for in seconds, \"m\" for in minutes, \"h\" for in hours,\n"\
+    "and \"d\" for in days."
+cbstrmktime.restype = c_long
+cbstrmktime.argtypes = [c_char_p]
+
+# void cbproctime(double *usrp, double *sysp);
+cbproctime = libest_raw.cbproctime
+cbproctime.__doc__ = \
+    "Get user and system processing times.\n"\
+    "`usrp' specifies the pointer to a variable to which the user processing time is assigned.\n"\
+    "If it is `NULL', it is not used.  The unit of time is seconds.\n"\
+    "`sysp' specifies the pointer to a variable to which the system processing time is assigned.\n"\
+    "If it is `NULL', it is not used.  The unit of time is seconds."
+cbproctime.restype = None
+cbproctime.argtypes = [POINTER(c_double), POINTER(c_double)]
+
+# void cbstdiobin(void);
+cbstdiobin = libest_raw.cbstdiobin
+cbstdiobin.__doc__ = \
+    "Ensure that the standard I/O is binary mode.\n"\
+    "This function is useful for applications on dosish file systems."
+cbstdiobin.restype = None
+cbstdiobin.argtypes = []
+
+
+############################################################
+# features for experts
+############################################################
+
+# void *cbmyfatal(const char *message);
+cbmyfatal = libest_raw.cbmyfatal
+cbmyfatal.__doc__ = \
+    "Show error message on the standard error output and exit.\n"\
+    "`message' specifies an error message.\n"\
+    "This function does not return."
+cbmyfatal.restype = c_void_p
+cbmyfatal.argtypes = [c_char_p]
+
+# CBDATUM *cbdatumopenbuf(char *ptr, int size);
+cbdatumopenbuf = libest_raw.cbdatumopenbuf
+cbdatumopenbuf.__doc__ = \
+    "Create a datum handle from an allocated region.\n"\
+    "`ptr' specifies the pointer to the region of an element.  The region should be allocated with\n"\
+    "malloc and it is released by the function.\n"\
+    "`size' specifies the size of the region."
+cbdatumopenbuf.restype = c_void_p
+cbdatumopenbuf.argtypes = [c_char_p, c_int]
+
+# void cbdatumsetbuf(CBDATUM *datum, char *ptr, int size);
+cbdatumsetbuf = libest_raw.cbdatumsetbuf
+cbdatumsetbuf.__doc__ = \
+    "Set a buffer to a datum handle.\n"\
+    "`ptr' specifies the pointer to the region of an element.  The region should be allocated with\n"\
+    "malloc and it is released by the function.\n"\
+    "`size' specifies the size of the region."
+cbdatumsetbuf.restype = None
+cbdatumsetbuf.argtypes = [c_void_p, c_char_p, c_int]
+
+# void cblistpushbuf(CBLIST *list, char *ptr, int size);
+cblistpushbuf = libest_raw.cblistpushbuf
+cblistpushbuf.__doc__ = \
+    "Add an allocated element at the end of a list.\n"\
+    "`list' specifies a list handle.\n"\
+    "`ptr' specifies the pointer to the region of an element.  The region should be allocated with\n"\
+    "malloc and it is released by the function.\n"\
+    "`size' specifies the size of the region."
+cblistpushbuf.restype = None
+cblistpushbuf.argtypes = [c_void_p, c_char_p, c_int]
+
+# CBMAP *cbmapopenex(int bnum);
 cbmapopenex = libest_raw.cbmapopenex
 cbmapopenex.__doc__ = \
     "Get a map handle with specifying the number of buckets.\n"\
