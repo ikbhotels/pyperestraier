@@ -12,7 +12,7 @@ class Document(object):
         self._id = -1
         self._attr = {}
         self._texts = []
-        self._hidden_texts = None
+        self._hidden_texts = []
         self._keywords = {}
         self._score = None
 
@@ -94,7 +94,7 @@ class Document(object):
         textsNative = est_doc_texts(docNative)
         textsNum = cblistnum(textsNative)
         self._texts = [ cblistval(textsNative, i, None).decode("utf8") for i in range(textsNum) ]
-        self._hidden_texts = est_doc_hidden_texts(docNative).decode("utf-8")
+        self._hidden_texts = [est_doc_hidden_texts(docNative).decode("utf-8")]
         self._score = est_doc_score(docNative)
     
     def toNative(self):
