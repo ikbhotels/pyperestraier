@@ -8,14 +8,13 @@ libc = ctypes.CDLL("libc.so")
 class Document(object):
     """Document class for hyperestraier.
     """
-    def __init__(self):
-        self._id = -1
-        self._attr = {}
-        self._texts = []
-        self._hidden_texts = []
-        self._keywords = {}
-        self._score = None
-
+    _id = -1
+    _attr = {}
+    _texts = []
+    _hidden_texts = []
+    _keywords = {}
+    _score = None
+    
     def add_attr(self, name, value):
         """Add an attribute.
         `name' specifies the name of an attribute.
@@ -133,48 +132,47 @@ class Condition(object):
     ISECT  = ESTCONDISECT          # with the intersection phrase
     SCFB   = ESTCONDSCFB           # feed back scores (for debug)
     
-    def __init__(self):
-        self.phrase = None
-        self.attr = []
-        self.order = None
-        self.max = 0
-        self.skip = 0
-        self.options = 0
-        self.auxiliary = 0
-        self.eclipse = 0.0
-        self.distinct = None
-        self.mask = 0
+    _phrase = None
+    _attr = []
+    _order = None
+    _max = 0
+    _skip = 0
+    _options = 0
+    _auxiliary = 0
+    _eclipse = 0.0
+    _distinct = None
+    _mask = 0
     
     def set_phrase(self, phrase):
         """Set the search phrase.
         `phrase' specifies a search phrase.
         """
-        self.phrase = phrase
+        self._phrase = phrase
     
     def add_attr(self, expr):
         """Add an expression for an attribute.
         `expr' specifies an expression for an attribute.
         """
-        self.attr.append(expr)
+        self._attr.append(expr)
     
     def set_order(self, expr):
         """Set the order of a condition object.
         `expr' specifies an expression for the order.  By default, the order is by score descending.
         """
-        self.order = expr
+        self._order = expr
     
     def set_max(self, max):
         """Set the maximum number of retrieval.
         `max' specifies the maximum number of retrieval.  By default, the number of retrieval is
         not limited.
         """
-        self.max = max
+        self._max = max
     
     def set_skip(self, skip):
         """Set the number of skipped documents.
         `skip' specifies the number of documents to be skipped in the search result.
         """
-        self.skip = skip
+        self._skip = skip
     
     def set_eclipse(self, limit):
         """Set the lower limit of similarity eclipse.
@@ -185,7 +183,7 @@ class Condition(object):
         and documents in the same directory are eclipsed.  If the limit is `Condition.ECLFILE',
         similarity is ignored and documents of the same file are eclipsed.
         """
-        self.eclipse = limit
+        self._eclipse = limit
     
     def set_options(self, options):
         """Set options of retrieval.
@@ -198,70 +196,73 @@ class Condition(object):
         to use intersection phrase.  Each option can be specified at the same time by bitwise or.
         If keys are skipped, though search speed is improved, the relevance ratio grows less.
         """
-        self.options = options
+        self._options = options
 
     def set_auxiliary(self, min):
         """Set permission to adopt result of the auxiliary index.
         `min' specifies the minimum hits to adopt result of the auxiliary index.  If it is not more
         than 0, the auxiliary index is not used.  By default, it is 32.
         """
-        self.auxiliary = min
+        self._auxiliary = min
     
     def set_distinct(self, name):
         """Set the attribute distinction filter.
         `name' specifies the name of an attribute to be distinct.
         """
-        self.distinct = name
+        self._distinct = name
     
     def set_mask(self, mask):
         """Set the mask of targets of meta search.
         `mask' specifies a masking number.  1 means the first target, 2 means the second target, 4
         means the third target, and power values of 2 and their summation compose the mask.
         """
-        self.mask = mask
+        self._mask = mask
     
     def toNative(self):
         condNative = est_cond_new()
-        if self.phrase:
-            est_cond_set_phrase(condNative, self.phrase.encode("utf-8"))
-        for attr1 in self.attr:
+        if self._phrase:
+            est_cond_set_phrase(condNative, self._phrase.encode("utf-8"))
+        for attr1 in self._attr:
             est_cond_add_attr(condNative, attr1.encode("utf-8"))
-        if self.order:
-            est_cond_set_order(condNative, self.order.encode("utf-8"))
-        if self.max:
-            est_cond_set_max(condNative, self.max)
-        if self.skip:
-            est_cond_set_skip(condNative, self.skip)
-        if self.options:
-            est_cond_set_options(condNative, self.options)
-        if self.auxiliary:
-            est_cond_set_auxiliary(condNatie, self.auxiliary)
-        if self.eclipse:
-            est_cond_set_eclipse(condNative, self.eclipse)
-        if self.distinct:
-            est_cond_set_distinct(condNative, self.distinct.encode("utf-8"))
-        if self.mask:
-            est_cond_set_mask(condNative, self.mask)
+        if self._order:
+            est_cond_set_order(condNative, self._order.encode("utf-8"))
+        if self._max:
+            est_cond_set_max(condNative, self._max)
+        if self._skip:
+            est_cond_set_skip(condNative, self._skip)
+        if self._options:
+            est_cond_set_options(condNative, self._options)
+        if self._auxiliary:
+            est_cond_set_auxiliary(condNatie, self._auxiliary)
+        if self._eclipse:
+            est_cond_set_eclipse(condNative, self._eclipse)
+        if self._distinct:
+            est_cond_set_distinct(condNative, self._distinct.encode("utf-8"))
+        if self._mask:
+            est_cond_set_mask(condNative, self._mask)
         return condNative
 
     def deleteNative(self, condNative):
         est_cond_delete(condNative)
 
 class Result(object):
+    _doc_ids = []
+    _hitnum = 0
+    
     def doc_num(self):
         """Get the number of documents.
         The return value is the number of documents in the result.
         """
-        return len(self.doc_ids)
+        return len(self._doc_ids)
     
     def get_doc_id(self, index):
         """Get the ID number of a document.
         `index' specifies the index of a document.
         The return value is the ID number of the document or -1 if the index is out of bounds.
         """
-        if len(self.doc_ids) <= index:
+        if len(self._doc_ids) <= index:
             return -1
-        return self.doc_ids[index]
+        return self._doc_ids[index]
     
     def get_dbidx(self, index):
         """Get the index of the container database of a document.
@@ -270,7 +271,6 @@ class Result(object):
         is out of bounds.
         """
         pass
-        
 
 class Database(object):
     DBREADER = ESTDBREADER         # open mode: open as a reader
@@ -298,6 +298,8 @@ class Database(object):
     GDNOATTR = ESTGDNOATTR         # get_doc option: no attributes
     GDNOTEXT = ESTGDNOTEXT         # get_doc option: no text
     GDNOKWD  = ESTGDNOKWD          # get_doc option: no keywords
+    
+    _estdb = None
     
     def search_meta(self, dbs, cond):
         """Search plural databases for documents corresponding a condition.
@@ -340,8 +342,8 @@ class Database(object):
         The return value is true if success, else it is false.
         """
         ecode = ctypes.c_int()
-        self.estdb = est_db_open(name.encode("utf-8"), omode, ctypes.byref(ecode))
-        if not self.estdb:
+        self._estdb = est_db_open(name.encode("utf-8"), omode, ctypes.byref(ecode))
+        if not self._estdb:
             return False
         return True
 
@@ -350,22 +352,22 @@ class Database(object):
         The return value is true if success, else it is false.
         """
         ecode = ctypes.c_int()
-        self.estdb = est_db_close(self.estdb, ctypes.byref(ecode))
-        if not self.estdb:
-            return False
+        if not self._estdb:
+            if not est_db_close(self._estdb, ctypes.byref(ecode)):
+                return False
         return True
     
     def error(self):
         """Get the last happened error code.
         The return value is the last happened error code.
         """
-        return est_db_error(self.estdb)
+        return est_db_error(self._estdb)
     
     def fatal(self):
         """Check whether the database has a fatal error.
         The return value is true if the database has fatal erroor, else it is false.
         """
-        return est_db_fatal(self.estdb)
+        return est_db_fatal(self._estdb)
     
     def add_attr_index(self, name, type):
         """Add an index for narrowing or sorting with document attributes.
@@ -383,7 +385,7 @@ class Database(object):
         words are flushed.
         The return value is true if success, else it is false.
         """
-        rv = est_db_flush(self.estdb, max)
+        rv = est_db_flush(self._estdb, max)
         if rv:
             return True
         else:
@@ -393,7 +395,7 @@ class Database(object):
         """Synchronize updating contents.
         The return value is true if success, else it is false.
         """
-        rv = est_db_sync(self.estdb)
+        rv = est_db_sync(self._estdb)
         if rv:
             return True
         else:
@@ -406,7 +408,7 @@ class Database(object):
         two can be specified at the same time by bitwise or.
         The return value is true if success, else it is false.
         """
-        rv = est_db_optimize(self.estdb, options)
+        rv = est_db_optimize(self._estdb, options)
         if rv:
             return True
         else:
@@ -419,7 +421,7 @@ class Database(object):
         deleted document.
         The return value is true if success, else it is false.
         """
-        rv = est_db_merge(self.estdb, name.encode("utf-8"), options)
+        rv = est_db_merge(self._estdb, name.encode("utf-8"), options)
         if rv:
             return True
         else:
@@ -433,7 +435,7 @@ class Database(object):
         The return value is true if success, else it is false.
         """
         docNative = doc.toNative()
-        rv = est_db_put_doc(self.estdb, docNative, options)
+        rv = est_db_put_doc(self._estdb, docNative, options)
         doc.deleteNative(docNative)
         if rv:
             return True
@@ -447,7 +449,7 @@ class Database(object):
         deleted document.
         The return value is true if success, else it is false.
         """
-        rv = est_db_out_doc(self.estdb, id, options)
+        rv = est_db_out_doc(self._estdb, id, options)
         if rv:
             return True
         else:
@@ -470,7 +472,7 @@ class Database(object):
         """
         doc = Document()
         options = 0
-        docNative = est_db_get_doc(self.estdb, id, options)
+        docNative = est_db_get_doc(self._estdb, id, options)
         doc.fromNative(docNative)
         doc.deleteNative(docNative)
         return doc
@@ -488,27 +490,27 @@ class Database(object):
         `uri' specifies the URI of a registered document.
         The return value is the ID of the document.  On error, -1 is returned.
         """
-        return est_db_uri_to_id(self.estdb, uri.encode("utf-8"))
+        return est_db_uri_to_id(self._estdb, uri.encode("utf-8"))
     
     def search(self, cond):
         num = ctypes.c_int()
         condNative = cond.toNative()
         hints = cbmapopenex(31) # MINIBNUM
-        idsNative = est_db_search(self.estdb, condNative,
+        idsNative = est_db_search(self._estdb, condNative,
                                   ctypes.byref(num), hints)
         cond.deleteNative(condNative)
         
         result = Result()
-        result.doc_ids = [idsNative[i] for i in range(num.value)]
+        result._doc_ids = [idsNative[i] for i in range(num.value)]
         libc.free(idsNative)
-        result.hitnum = int(cbmapget(hints, "", 0, None))
+        result._hitnum = int(cbmapget(hints, "", 0, None))
         cbmapclose(hints)
         return result
     
     def getDoc(self, id, options):
         doc = Document()
         options = 0
-        docNative = est_db_get_doc(self.estdb, id, options)
+        docNative = est_db_get_doc(self._estdb, id, options)
         doc.fromNative(docNative)
         doc.deleteNative(docNative)
         return doc
