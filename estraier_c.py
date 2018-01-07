@@ -247,7 +247,7 @@ class Condition(object):
 
 class Result(object):
     _doc_ids = []
-    _hitnum = 0
+    _hints = {}
     
     def doc_num(self):
         """Get the number of documents.
@@ -271,6 +271,20 @@ class Result(object):
         is out of bounds.
         """
         pass
+    
+    def hint_words(self):
+        """Get an array of hint words.
+        The return value is an array of hint words.
+        """
+        return self._hints.keys()
+    
+    def hint(self, word):
+        """Get the value of a hint word.
+        `word' specifies a hint word.  An empty string means the number of whole result.
+        The return value is the number of documents corresponding the hint word.  If the word is
+        in a negative condition, the value is negative.
+        """
+        return self._hints[word]
 
 class Database(object):
     DBREADER = ESTDBREADER         # open mode: open as a reader
@@ -468,22 +482,29 @@ class Database(object):
         `options' specifies options: `Database.GDNOATTR' to ignore attributes, `Database.GDNOTEXT'
         to ignore the body text, `Database.GDNOKWD' to ignore keywords.  The three can be
         specified at the same time by bitwise or.
-        The return value is a document object.  On error, `nil' is returned.
+        The return value is a document object.  On error, `None' is returned.
         """
         doc = Document()
-        options = 0
         docNative = est_db_get_doc(self._estdb, id, options)
-        doc.fromNative(docNative)
-        doc.deleteNative(docNative)
+        if docNative:
+            doc.fromNative(docNative)
+            doc.deleteNative(docNative)
+        else:
+            doc = None
         return doc
     
     def get_doc_attr(self, id, name):
         """Retrieve the value of an attribute of a document.
         `id' specifies the ID number of a registered document.
         `name' specifies the name of an attribute.
-        The return value is the value of the attribute or `nil' if it does not exist.
+        The return value is the value of the attribute or `None' if it does not exist.
         """
-        pass
+        attrNative = est_db_get_doc_attr(self._estdb, id, name.encode("utf-8"))
+        attr = None
+        if attrNative:
+            attr = attrNative.decode("utf-8")
+            free(attrNative)
+        return attr
     
     def uri_to_id(self, uri):
         """Get the ID of a document specified by URI.
@@ -492,25 +513,100 @@ class Database(object):
         """
         return est_db_uri_to_id(self._estdb, uri.encode("utf-8"))
     
+    def name(self):
+        """Get the name.
+        The return value is the name of the database.
+        """
+        return est_db_name(self._estdb)
+    
+    def doc_num(self):
+        """Get the number of documents.
+        The return value is the number of documents in the database.
+        """
+        return est_db_doc_num(self._estdb)
+    
+    def word_num(self):
+        """Get the number of unique words.
+        The return value is the number of unique words in the database.
+        """
+        return est_db_word_num(self._estdb)
+    
+    def size(self):
+        """Get the size.
+        The return value is the size of the database.
+        """
+        return est_db_size(self._estdb)
+    
     def search(self, cond):
+        """Search for documents corresponding a condition.
+        `cond' specifies a condition object.
+        The return value is a result object.  On error, `None' is returned.
+        """
         num = ctypes.c_int()
         condNative = cond.toNative()
-        hints = cbmapopenex(31) # MINIBNUM
+        hintsNative = cbmapopenex(31) # MINIBNUM
         idsNative = est_db_search(self._estdb, condNative,
-                                  ctypes.byref(num), hints)
+                                  ctypes.byref(num), hintsNative)
         cond.deleteNative(condNative)
         
         result = Result()
         result._doc_ids = [idsNative[i] for i in range(num.value)]
         libc.free(idsNative)
-        result._hitnum = int(cbmapget(hints, "", 0, None))
-        cbmapclose(hints)
+        keylistNative = cbmapkeys(hintsNative)
+        for i in range(cblistnum(keylistNative)):
+            keyNative = cblistval(keylistNative, i, None)
+            valueNative = cbmapget(hintsNative, keyNative, -1, None)
+            result._hints[keyNative.decode("utf-8")] = valueNative.decode("utf-8")
+        cblistclose(keylistNative)
+        cbmapclose(hintsNative)
         return result
     
-    def getDoc(self, id, options):
-        doc = Document()
-        options = 0
-        docNative = est_db_get_doc(self._estdb, id, options)
-        doc.fromNative(docNative)
-        doc.deleteNative(docNative)
-        return doc
+    def scan_doc(self, doc, cond):
+        """Check whether a document object matches the phrase of a search condition object definitely.
+        `doc' specifies a document object.
+        `cond' specifies a search condition object.
+        The return value is True if the document matches the phrase of the condition object
+        definitely, else it is False.
+        """
+        docNative = doc.toNative()
+        condNative = cond.toNative()
+        rv = est_db_scan_doc(self._estdb, docNative, condNative)
+        condNative.deleteNative()
+        docNative.deleteNative()
+        return rv
+    
+    def set_cache_size(self, size, anum, tnum, rnum):
+        """Set the maximum size of the cache memory.
+        `size' specifies the maximum size of the index cache.  By default, it is 64MB.  If it is
+        not more than 0, the current size is not changed.
+        `anum' specifies the maximum number of cached records for document attributes.  By default,
+        it is 8192.  If it is not more than 0, the current size is not changed.
+        `tnum' specifies the maximum number of cached records for document texts.  By default, it
+        is 1024.  If it is not more than 0, the current size is not changed.
+        `rnum' specifies the maximum number of cached records for occurrence results.  By default,
+        it is 256.  If it is not more than 0, the current size is not changed.
+        """
+        est_db_set_cache_size(self._estdb, size, anum, tnum, rnum)
+    
+    def add_pseudo_index(self, path):
+        """Add a pseudo index directory.
+        `path' specifies the path of a pseudo index directory.
+        The return value is True if success, else it is False.
+        """
+        if not est_db_add_pseudo_index(self._estdb, path.encode("utf-8")):
+            return False
+        else:
+            return True
+    
+    def set_wildmax(self, num):
+        """Set the maximum number of expansion of wild cards.
+        `num' specifies the maximum number of expansion of wild cards.
+        """
+        est_db_set_wildmax(self._estdb, num)
+    
+    def set_informer(self, informer):
+        """Set the callback function to inform of database events.
+        `informer' specifies an arbitrary object with a method named as `inform'.  The method
+        should have one parameter for a string of a message of each event.
+        """
+        est_db_set_informer(self._estdb, informer, None)
