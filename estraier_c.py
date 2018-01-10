@@ -15,6 +15,12 @@ class Document(object):
     _keywords = {}
     _score = None
     
+    def __init__(self):
+        self._attr = {}
+        self._texts = []
+        self._hidden_texts = []
+        self._keywords = {}
+
     def add_attr(self, name, value):
         """Add an attribute.
         `name' specifies the name of an attribute.
@@ -82,30 +88,37 @@ class Document(object):
         The return value is concatenated sentences.
         """
         pass
-
+    
     def fromNative(self, docNative):
         self._id = est_doc_id(docNative)
+        self._score = est_doc_score(docNative)
+        # attr
         attrnames = est_doc_attr_names(docNative)
         for i in range(cblistnum(attrnames)):
             a = cblistval(attrnames, i, None)
             self._attr[a.decode("utf-8")] = est_doc_attr(docNative, a)
         cblistclose(attrnames)
+        # texts
         textsNative = est_doc_texts(docNative)
         textsNum = cblistnum(textsNative)
         self._texts = [ cblistval(textsNative, i, None).decode("utf8") for i in range(textsNum) ]
         self._hidden_texts = [est_doc_hidden_texts(docNative).decode("utf-8")]
-        self._score = est_doc_score(docNative)
     
     def toNative(self):
         docNative = est_doc_new()
+        if self._score:
+            est_doc_set_score(docNative, self._score)
+        # attr
         for key in self._attr:
             est_doc_add_attr(docNative,
                              key.encode("utf-8"),
                              self._attr[key].encode("utf-8"))
+        # texts
         for text1 in self._texts:
             est_doc_add_text(docNative, text1.encode("utf-8"))
         for text1 in self._hidden_texts:
             est_doc_add_hidden_text(docNative, text1.encode("utf-8"))
+        # keywords
         if self._keywords:
             cbmapkw = cbmapopen()
             for key in self._keywords:
@@ -113,8 +126,6 @@ class Document(object):
                          value.encode("utf-8"), -1, 1)
             est_doc_set_keywords(docNative, cbmapkw)
             cbmapclose(cbmapkw)
-        if self._score:
-            est_doc_set_score(docNative, self.score)
         return docNative
     
     def deleteNative(self, docNative):
@@ -142,6 +153,9 @@ class Condition(object):
     _eclipse = 0.0
     _distinct = None
     _mask = 0
+    
+    def __init__(self):
+        self.__attr = []
     
     def set_phrase(self, phrase):
         """Set the search phrase.
@@ -248,6 +262,10 @@ class Condition(object):
 class Result(object):
     _doc_ids = []
     _hints = {}
+    
+    def __init__(self):
+        self._doc_ids = []
+        self._hints = {}
     
     def doc_num(self):
         """Get the number of documents.
@@ -503,7 +521,7 @@ class Database(object):
         attr = None
         if attrNative:
             attr = attrNative.decode("utf-8")
-            free(attrNative)
+            libc.free(attrNative)
         return attr
     
     def uri_to_id(self, uri):
