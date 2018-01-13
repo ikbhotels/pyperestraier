@@ -89,6 +89,36 @@ class Document(object):
         """
         pass
     
+    def keywords(self):
+        """Get attached keywords.
+        The return value is a hash object of keywords and their scores in decimal string.  If no
+        keyword is attached, `None' is returned.
+        """
+        return self._keywords
+    
+    def make_snippet(self, words, wwidth, hwidth, awidth):
+        """Make a snippet of the body text.
+        `words' specifies an array object of words to be highlight.
+        `wwidth' specifies whole width of the result.
+        `hwidth' specifies width of strings picked up from the beginning of the text.
+        `awidth' width of strings picked up around each highlighted word.
+        The return value is a snippet string of the body text.  There are tab separated values.
+        Each line is a string to be shown.  Though most lines have only one field, some lines have
+        two fields.  If the second field exists, the first field is to be shown with highlighted,
+        and the second field means its normalized form.
+        """
+        docNative = self.toNative()
+        wordsNative = cblistopen()
+        for w in words:
+            cblistpush(wordsNative, w.encode("utf-8"), -1)
+        snippetNative = est_doc_make_snippet(docNative, wordsNative,
+                                             wwidth, hwidth, awidth)
+        cblistclose(wordsNative)
+        snippet = ctypes.string_at(snippetNative).decode("utf-8")
+        libc.free(snippetNative)
+        self.deleteNative(docNative)
+        return snippet
+
     def fromNative(self, docNative):
         self._id = est_doc_id(docNative)
         self._score = est_doc_score(docNative)
@@ -96,7 +126,7 @@ class Document(object):
         attrnames = est_doc_attr_names(docNative)
         for i in range(cblistnum(attrnames)):
             a = cblistval(attrnames, i, None)
-            self._attr[a.decode("utf-8")] = est_doc_attr(docNative, a)
+            self._attr[a.decode("utf-8")] = est_doc_attr(docNative, a).decode("utf-8")
         cblistclose(attrnames)
         # texts
         textsNative = est_doc_texts(docNative)
@@ -294,7 +324,11 @@ class Result(object):
         """Get an array of hint words.
         The return value is an array of hint words.
         """
-        return self._hints.keys()
+        rv = []
+        for key in self._hints.keys():
+            if key != "":
+                rv.append(key)
+        return rv
     
     def hint(self, word):
         """Get the value of a hint word.

@@ -213,8 +213,10 @@ est_doc_make_snippet.__doc__ = \
     "some lines have two fields.  If the second field exists, the first field is to be shown with\n"\
     "highlighted, and the second field means its normalized form.  Because the region of the\n"\
     "return value is allocated with the `malloc' call, it should be released with the `free' call\n"\
-    "if it is no longer in use."
-est_doc_make_snippet.restype = c_char_p
+    "if it is no longer in use.\n"\
+    "XXX restype is c_void_p, not c_char_p, because returned buffer have to be freed.\n"\
+    "XXX Get a string with ctypes.string_at, decode utf-8, and free."
+est_doc_make_snippet.restype = c_void_p
 est_doc_make_snippet.argtypes = [c_void_p, c_void_p, c_int, c_int, c_int]
 
 ############################################################
